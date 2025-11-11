@@ -2,6 +2,7 @@
 .env
 .env.local
 .env.*.local
+**/.env
 
 # Python
 __pycache__/
@@ -44,6 +45,8 @@ SystemScoutsApi/ApiCoreScouts/Serializers/__pycache__
 SystemScoutsApi/ApiCoreScouts/Serializers/migrations
 SystemScoutsApi/ApiCoreScouts/View/__pycache__
 SystemScoutsApi/ApiCoreScouts/View/migrations
+SystemScoutsApi/ApiCoreScouts/Filters/__pycache__
+SystemScoutsApi/ApiCoreScouts/Filters/migrations
 
 # Vue/Node
 node_modules/
@@ -65,3 +68,9 @@ dist/
 # OS
 .DS_Store
 Thumbs.db
+
+# DB
+*.sqlite3
+
+# logs
+**/*.log

@@ -1,9 +1,9 @@
-from .Usuarios_serializers import *
-from .Cursos_serializers import *
-from .Mantenedores_serializers import *
-from .Pagos_serializers import *
-from .Archivos_serializers import *
-from .Personas_serializers import *
+from .Usuario_serializer import *
+from .Curso_serializer import *
+from .Mantenedor_serializer import *
+from .Pago_serializer import *
+from .Archivo_serializer import *
+from .Persona_serializer import *
 
 serializers_dict = {
     # USUARIOS y CURSOS

@@ -2,207 +2,201 @@ import mysql.connector
 from faker import Faker
 import random
 import os
-from dotenv import load_dotenv
-from datetime import datetime, timedelta
+from datetime import timedelta
 
+# ============================
+# CONFIGURACIÓN DE CONEXIÓN
+# ============================
+connection = mysql.connector.connect(
+    host=os.getenv("HOST"),
+    user=os.getenv("USER"),
+    password=os.getenv("PASSWORD_DB"),
+    database=os.getenv("DATABASE")
+)
+cursor = connection.cursor()
 fake = Faker('es_CL')
 
-load_dotenv()
+# ============================
+# FUNCIONES AUXILIARES
+# ============================
 
-# ==== Configuración ====
+def get_random_id(table, column):
+    cursor.execute(f"SELECT {column} FROM {table} ORDER BY RAND() LIMIT 1;")
+    result = cursor.fetchone()
+    return result[0] if result else None
 
-modulo = ""
+def generar_codigo_unico():
+    """Genera un CUR_CODIGO único que no exista en la tabla CURSO."""
+    while True:
+        codigo = f"CUR-{random.randint(1000, 9999)}"
+        cursor.execute("SELECT COUNT(*) FROM CURSO WHERE CUR_CODIGO = %s", (codigo,))
+        if cursor.fetchone()[0] == 0:
+            return codigo
 
-db = mysql.connector.connect(
-    host = os.getenv("HOST"),
-    user = os.getenv("USER"),
-    password = os.getenv("PASSWORD"),
-    database = os.getenv("DATABASE")
-)
-cursor = db.cursor(buffered=True)
 
-# ==== Función para insertar múltiples registros ====
-def insert_many(query, data):
-    cursor.executemany(query, data)
-    db.commit()
+# ============================
+# POBLAR CURSO
+# ============================
 
-try:
-    # ==== Validar tablas base ====
-    tablas_base = [
-        f"{modulo}usuario",
-        f"{modulo}persona",
-        f"{modulo}rol",
-        f"{modulo}cargo",
-        f"{modulo}comuna",
-        f"{modulo}tipo_curso",
-        f"{modulo}alimentacion",
-        f"{modulo}rama",
-    ]
+def poblar_curso(n=10):
+    print(f"Insertando {n} cursos...")
+    for _ in range(n):
+        USU_ID = get_random_id("USUARIO", "USU_ID")
+        TCU_ID = get_random_id("TIPO_CURSO", "TCU_ID")
+        PER_ID_RESPONSABLE = get_random_id("PERSONA", "PER_ID")
+        CAR_ID_RESPONSABLE = get_random_id("CARGO", "CAR_ID")
+        COM_ID_LUGAR = get_random_id("COMUNA", "COM_ID")
 
-    cursor.execute("SHOW TABLES")
-    tablas_existentes = [t[0] for t in cursor.fetchall()]
+        fecha_hora = fake.date_time_between(start_date='-1y', end_date='now')
+        fecha_solicitud = fecha_hora.date()
+        codigo = generar_codigo_unico()  # ✅ Garantiza unicidad
+        descripcion = fake.sentence(nb_words=6)
+        observacion = fake.text(max_nb_chars=80) if random.choice([True, False]) else None
+        administra = random.randint(1, 2)
+        cota_con = random.randint(10000, 50000)
+        cota_sin = random.randint(5000, 30000)
+        modalidad = random.randint(1, 3)
+        tipo_curso = random.randint(1, 3)
+        lugar = fake.city()
+        latitud = str(round(random.uniform(-56.0, -17.0), 6))
+        longitud = str(round(random.uniform(-75.0, -66.0), 6))
+        estado = random.randint(0, 3)
 
-    if not all(t in tablas_existentes for t in tablas_base):
-        raise Exception("Faltan tablas base en la base de datos.")
-
-    # ==== Obtener IDs base ====
-    def get_ids(tabla, campo):
-        cursor.execute(f"SELECT {campo} FROM {tabla}")
-        return [row[0] for row in cursor.fetchall()]
-
-    usuarios = get_ids(f"{modulo}usuario", "USU_ID")
-    personas = get_ids(f"{modulo}persona", "PER_ID")
-    roles = get_ids(f"{modulo}rol", "ROL_ID")
-    cargos = get_ids(f"{modulo}cargo", "CAR_ID")
-    comunas = get_ids(f"{modulo}comuna", "COM_ID")
-    tipos_curso = get_ids(f"{modulo}tipo_curso", "TCU_ID")
-    alimentaciones = get_ids(f"{modulo}alimentacion", "ALI_ID")
-    ramas = get_ids(f"{modulo}rama", "RAM_ID")
-
-    if not (usuarios and personas and roles and cargos and comunas and tipos_curso and alimentaciones and ramas):
-        raise Exception("Faltan registros base en una o más tablas relacionadas.")
-
-    # ==== CURSO ====
-    print("Insertando cursos...")
-    cursos = []
-    for _ in range(10):
-        cursos.append((
-            random.choice(usuarios),
-            random.choice(tipos_curso),
-            random.choice(personas),
-            random.choice(cargos),
-            random.choice(comunas),
-            datetime.now(),
-            fake.date_this_year(),
-            fake.unique.bothify(text='CUR-####'),
-            fake.sentence(nb_words=4),
-            fake.sentence(nb_words=6),
-            random.choice([1, 2]),  # CUR_ADMINISTRA
-            random.randint(10000, 30000),  # COTA CON ALMUERZO
-            random.randint(5000, 15000),   # COTA SIN ALMUERZO
-            random.choice([1, 2, 3]),  # MODALIDAD
-            random.choice([1, 2, 3]),  # TIPO CURSO
-            fake.city(),
-            random.choice([0, 1, 2, 3]),  # ESTADO
-            fake.latitude(),   # LATITUD
-            fake.longitude()   # LONGITUD
+        cursor.execute("""
+            INSERT INTO CURSO (
+                USU_ID, TCU_ID, PER_ID_RESPONSABLE, CAR_ID_RESPONSABLE, COM_ID_LUGAR,
+                CUR_FECHA_HORA, CUR_FECHA_SOLICITUD, CUR_CODIGO, CUR_DESCRIPCION, CUR_OBSERVACION,
+                CUR_ADMINISTRA, CUR_COTA_CON_ALMUERZO, CUR_COTA_SIN_ALMUERZO,
+                CUR_MODALIDAD, CUR_TIPO_CURSO, CUR_LUGAR, CUR_COORD_LATITUD,
+                CUR_COORD_LONGITUD, CUR_ESTADO
+            )
+            VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
+        """, (
+            USU_ID, TCU_ID, PER_ID_RESPONSABLE, CAR_ID_RESPONSABLE, COM_ID_LUGAR,
+            fecha_hora, fecha_solicitud, codigo, descripcion, observacion, administra,
+            cota_con, cota_sin, modalidad, tipo_curso, lugar, latitud, longitud, estado
         ))
+        connection.commit()
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso (
-        USU_ID, TCU_ID, PER_ID_RESPONSABLE, CAR_ID_RESPONSABLE, COM_ID_LUGAR,
-        CUR_FECHA_HORA, CUR_FECHA_SOLICITUD, CUR_CODIGO, CUR_DESCRIPCION, CUR_OBSERVACION,
-        CUR_ADMINISTRA, CUR_COTA_CON_ALMUERZO, CUR_COTA_SIN_ALMUERZO, CUR_MODALIDAD,
-        CUR_TIPO_CURSO, CUR_LUGAR, CUR_ESTADO, CUR_COORD_LATITUD, CUR_COORD_LONGITUD
-    ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-    """, cursos)
 
-    cursor.execute(f"SELECT CUR_ID FROM {modulo}curso")
-    curso_ids = [row[0] for row in cursor.fetchall()]
+# ============================
+# POBLAR CURSO_CUOTA
+# ============================
 
-    # ==== CURSO_CUOTA ====
-    print("Insertando cuotas...")
-    cuotas = []
-    for cid in curso_ids:
-        cuotas.append((cid, 1, fake.date_this_year(), random.uniform(10000, 30000)))
-        cuotas.append((cid, 2, fake.date_this_year(), random.uniform(5000, 15000)))
+def poblar_curso_cuota():
+    cursor.execute("SELECT CUR_ID, CUR_FECHA_SOLICITUD FROM CURSO;")
+    cursos = cursor.fetchall()
+    for CUR_ID, fecha_solicitud in cursos:
+        for tipo in [1, 2]:
+            valor = random.uniform(10000, 50000)
+            cursor.execute("""
+                INSERT INTO CURSO_CUOTA (CUR_ID, CUU_TIPO, CUU_FECHA, CUU_VALOR)
+                VALUES (%s, %s, %s, %s)
+            """, (CUR_ID, tipo, fecha_solicitud, valor))
+    connection.commit()
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso_cuota (CUR_ID, CUU_TIPO, CUU_FECHA, CUU_VALOR)
-    VALUES (%s, %s, %s, %s)
-    """, cuotas)
+# ============================
+# POBLAR CURSO_FECHA
+# ============================
 
-    # ==== CURSO_FECHA ====
-    print("Insertando fechas...")
-    fechas = []
-    for cid in curso_ids:
-        inicio = fake.date_this_year()
-        termino = inicio + timedelta(days=random.randint(3, 10))
-        fechas.append((cid, inicio, termino, random.choice([1, 2, 3])))
+def poblar_curso_fecha():
+    cursor.execute("SELECT CUR_ID, CUR_FECHA_SOLICITUD FROM CURSO;")
+    cursos = cursor.fetchall()
+    for CUR_ID, fecha_solicitud in cursos:
+        fecha_inicio = fecha_solicitud + timedelta(days=random.randint(5, 20))
+        fecha_termino = fecha_inicio + timedelta(days=random.randint(3, 10))
+        tipo = random.randint(1, 3)
+        cursor.execute("""
+            INSERT INTO CURSO_FECHA (CUR_ID, CUF_FECHA_INICIO, CUF_FECHA_TERMINO, CUF_TIPO)
+            VALUES (%s, %s, %s, %s)
+        """, (CUR_ID, fecha_inicio, fecha_termino, tipo))
+    connection.commit()
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso_fecha (CUR_ID, CUF_FECHA_INICIO, CUF_FECHA_TERMINO, CUF_TIPO)
-    VALUES (%s, %s, %s, %s)
-    """, fechas)
+# ============================
+# POBLAR CURSO_ALIMENTACION
+# ============================
 
-    # ==== CURSO_ALIMENTACION ====
-    print("Insertando alimentación...")
-    alimentacion_data = []
-    for cid in curso_ids:
-        for _ in range(3):
-            alimentacion_data.append((
-                cid,
-                random.choice(alimentaciones),
-                fake.date_this_year(),
-                random.choice([1, 2, 3, 4, 5]),
-                fake.word(),
-                random.randint(0, 10),
-                True
-            ))
+def poblar_curso_alimentacion():
+    cursor.execute("SELECT CUR_ID, CUR_FECHA_SOLICITUD FROM CURSO;")
+    cursos = cursor.fetchall()
+    for CUR_ID, fecha_solicitud in cursos:
+        ALI_ID = get_random_id("ALIMENTACION", "ALI_ID")
+        fecha = fecha_solicitud + timedelta(days=random.randint(1, 5))
+        tiempo = random.randint(1, 5)
+        descripcion = f"{fake.word()} especial"
+        cantidad = random.randint(0, 20)
+        vigente = random.choice([True, False])
+        cursor.execute("""
+            INSERT INTO CURSO_ALIMENTACION
+            (CUR_ID, ALI_ID, CUA_FECHA, CUA_TIEMPO, CUA_DESCRIPCION, CUA_CANTIDAD_ADICIONAL, CUA_VIGENTE)
+            VALUES (%s,%s,%s,%s,%s,%s,%s)
+        """, (CUR_ID, ALI_ID, fecha, tiempo, descripcion, cantidad, vigente))
+    connection.commit()
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso_alimentacion (CUR_ID, ALI_ID, CUA_FECHA, CUA_TIEMPO, CUA_DESCRIPCION, CUA_CANTIDAD_ADICIONAL, CUA_VIGENTE)
-    VALUES (%s, %s, %s, %s, %s, %s, %s)
-    """, alimentacion_data)
+# ============================
+# POBLAR CURSO_COORDINADOR
+# ============================
 
-    # ==== CURSO_COORDINADOR ====
-    print("Insertando coordinadores...")
-    coordinadores = []
-    for cid in curso_ids:
-        for _ in range(2):
-            coordinadores.append((
-                cid,
-                random.choice(personas),
-                random.choice(cargos),
-                fake.job()
-            ))
+def poblar_curso_coordinador():
+    cursor.execute("SELECT CUR_ID FROM CURSO;")
+    cursos = cursor.fetchall()
+    for CUR_ID, in cursos:
+        PER_ID = get_random_id("PERSONA", "PER_ID")
+        CAR_ID = get_random_id("CARGO", "CAR_ID")
+        cargo = fake.job()
+        cursor.execute("""
+            INSERT INTO CURSO_COORDINADOR (CUR_ID, PER_ID, CAR_ID, CUC_CARGO)
+            VALUES (%s,%s,%s,%s)
+        """, (CUR_ID, PER_ID, CAR_ID, cargo))
+    connection.commit()
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso_coordinador (CUR_ID, PER_ID, CAR_ID, CUC_CARGO)
-    VALUES (%s, %s, %s, %s)
-    """, coordinadores)
+# ============================
+# POBLAR CURSO_SECCION
+# ============================
 
-    # ==== CURSO_SECCION ====
-    print("Insertando secciones...")
-    secciones = []
-    for cid in curso_ids:
-        for _ in range(random.randint(1, 3)):
-            secciones.append((
-                cid,
-                random.choice(ramas),
-                random.randint(1, 5),
-                random.randint(10, 30)
-            ))
+def poblar_curso_seccion():
+    cursor.execute("SELECT CUR_ID FROM CURSO;")
+    cursos = cursor.fetchall()
+    for CUR_ID, in cursos:
+        RAM_ID = get_random_id("RAMA", "RAM_ID")
+        seccion = random.randint(1, 10)
+        cantidad = random.randint(10, 50)
+        cursor.execute("""
+            INSERT INTO CURSO_SECCION (CUR_ID, RAM_ID, CUS_SECCION, CUS_CANT_PARTICIPANTE)
+            VALUES (%s,%s,%s,%s)
+        """, (CUR_ID, RAM_ID, seccion, cantidad))
+    connection.commit()
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso_seccion (CUR_ID, RAM_ID, CUS_SECCION, CUS_CANT_PARTICIPANTE)
-    VALUES (%s, %s, %s, %s)
-    """, secciones)
+# ============================
+# POBLAR CURSO_FORMADOR
+# ============================
 
-    cursor.execute(f"SELECT CUS_ID FROM {modulo}curso_seccion")
-    seccion_ids = [row[0] for row in cursor.fetchall()]
+def poblar_curso_formador():
+    cursor.execute("SELECT CUS_ID, CUR_ID FROM CURSO_SECCION;")
+    secciones = cursor.fetchall()
+    for CUS_ID, CUR_ID in secciones:
+        PER_ID = get_random_id("PERSONA", "PER_ID")
+        ROL_ID = get_random_id("ROL", "ROL_ID")
+        director = random.choice([True, False])
+        cursor.execute("""
+            INSERT INTO CURSO_FORMADOR (CUR_ID, PER_ID, ROL_ID, CUS_ID, CUO_DIRECTOR)
+            VALUES (%s,%s,%s,%s,%s)
+        """, (CUR_ID, PER_ID, ROL_ID, CUS_ID, director))
+    connection.commit()
 
-    # ==== CURSO_FORMADOR ====
-    print("Insertando formadores...")
-    formadores = []
-    for cid in curso_ids:
-        for _ in range(3):
-            formadores.append((
-                cid,
-                random.choice(personas),
-                random.choice(roles),
-                random.choice(seccion_ids),
-                random.choice([True, False])
-            ))
+# ============================
+# EJECUCIÓN
+# ============================
 
-    insert_many(f"""
-    INSERT INTO {modulo}curso_formador (CUR_ID, PER_ID, ROL_ID, CUS_ID, CUO_DIRECTOR)
-    VALUES (%s, %s, %s, %s, %s)
-    """, formadores)
+if __name__ == "__main__":
+    poblar_curso(100)
+    poblar_curso_cuota()
+    poblar_curso_fecha()
+    poblar_curso_alimentacion()
+    poblar_curso_coordinador()
+    poblar_curso_seccion()
+    poblar_curso_formador()
+    print("✅ Poblamiento completo de CURSO y sus tablas asociadas.")
 
-    print("✅ Datos de cursos insertados correctamente con Faker")
-
-finally:
     cursor.close()
-    db.close()
-    print("🔒 Conexión cerrada.")
+    connection.close()

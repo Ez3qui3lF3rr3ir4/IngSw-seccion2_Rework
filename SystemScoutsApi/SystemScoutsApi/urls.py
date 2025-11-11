@@ -3,12 +3,12 @@ from django.urls import path, include
 from django.shortcuts import redirect
 
 
-from ApiCoreScouts.Routers.Usuarios_router import router as usuario_router
-from ApiCoreScouts.Routers.Cursos_router import router as curso_router
-from ApiCoreScouts.Routers.Archivos_router import router as archivo_router
-from ApiCoreScouts.Routers.Pagos_router import router as pago_router
-from ApiCoreScouts.Routers.Mantenedores_router import router as mantenedor_router
-from ApiCoreScouts.Routers.Personas_router import router as personas_router
+from ApiCoreScouts.Routers.Usuario_router import router as usuario_router
+from ApiCoreScouts.Routers.Curso_router import router as curso_router
+from ApiCoreScouts.Routers.Archivo_router import router as archivo_router
+from ApiCoreScouts.Routers.Pago_router import router as pago_router
+from ApiCoreScouts.Routers.Mantenedor_router import router as mantenedor_router
+from ApiCoreScouts.Routers.Persona_router import router as personas_router
 
 from rest_framework_simplejwt.views import ( TokenObtainPairView, TokenRefreshView )
 

@@ -1,5 +1,5 @@
 from django.contrib.auth.backends import BaseBackend
-from .Models.ModuloUsuarios import *
+from .Models.usuario_model import *
 
 class UsuarioBackend(BaseBackend):
     def authenticate(self, request, username=None, password=None, **kwargs):

@@ -2,6 +2,9 @@ from datetime import timedelta
 from dotenv import load_dotenv
 from pathlib import Path
 import os
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 load_dotenv()
 
@@ -103,7 +106,7 @@ DATABASES = {
         'USER': os.getenv("USER"),
         'PASSWORD': os.getenv("PASSWORD_DB"),
         'HOST': os.getenv("HOST"),
-        'PORT': os.getenv("PORT"),
+        'PORT': os.getenv("PORT", "3306"),
         'OPTIONS': {
             'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
         },
