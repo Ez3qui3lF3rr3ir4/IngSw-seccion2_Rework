@@ -1,38 +1,29 @@
 <template>
   <div v-if="modelValue" class="modal-overlay" @click.self="closeModal" role="dialog" aria-modal="true">
     <div class="modal-content" role="document">
-      <!-- Renderizado condicional: Nuevo con slots o Antiguo -->
-      
-      <!-- Nuevo: Si se usan los slots de title o footer -->
-      <template v-if="$slots.title || $slots.footer">
-        <div class="modal-header" v-if="$slots.title">
-          <h3 class="modal-title">
-            <slot name="title"></slot>
-          </h3>
-          <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        </div>
-        
-        <div class="modal-body-content">
-          <slot></slot> <!-- Contenido principal -->
-        </div>
-        
-        <div class="modal-footer" v-if="$slots.footer">
-          <slot name="footer"></slot>
-        </div>
-      </template>
-
-      <!-- Antiguo: Si no se usan los slots, para retrocompatibilidad -->
-      <template v-else>
-        <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
-        <slot></slot> <!-- Renderiza todo junto como antes -->
-      </template>
-
+      <!-- Header opcional -->
+      <div class="modal-header" v-if="$slots.title">
+        <h3 class="modal-title"><slot name="title"></slot></h3>
+      </div>
+      <!-- Botón cerrar siempre visible -->
+      <button class="close-btn" @click="closeModal" aria-label="Cerrar ventana">×</button>
+      <!-- Cuerpo con scrollbar personalizado -->
+      <ModernMainScrollbar class="modal-body-content">
+        <slot></slot>
+      </ModernMainScrollbar>
+      <!-- Footer opcional -->
+      <div class="modal-footer" v-if="$slots.footer">
+        <slot name="footer"></slot>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { defineProps, defineEmits } from 'vue';
+// Ya no se importan defineProps/defineEmits (macro implícito con <script setup>) para evitar warnings.
+import ModernMainScrollbar from './ModernMainScrollbar.vue'
+// Alias para variantes con mayúsculas diferentes en algunos archivos
+const ModernMainScrollBar = ModernMainScrollbar
 
 const props = defineProps({
   modelValue: { type: Boolean, default: false }
@@ -59,15 +50,16 @@ const closeModal = () => {
 }
 .modal-content {
   background: white;
-  border-radius: 8px;
+  border-radius: 12px;
   box-shadow: 0 8px 24px rgba(0,0,0,0.12);
   display: flex;
   flex-direction: column;
-  width: 95%;
-  max-width: 900px;
-  max-height: 90vh;
+  width: 98%;
+  max-width: 1200px;
+  max-height: 92vh;
   overflow: hidden; /* Evita que el contenido se desborde */
   animation: modal-in .2s ease-out both;
+  position: relative;
 }
 
 .modal-header {
@@ -85,8 +77,16 @@ const closeModal = () => {
 }
 
 .modal-body-content {
-  padding: 24px;
-  overflow-y: auto; /* Permite scroll solo en el cuerpo */
+  padding: 0;
+  overflow-y: auto; /* Permite desplazamiento vertical del contenido largo */
+  flex: 1;
+  min-height: 0;
+}
+
+.modal-body-scroll {
+  overflow-y: auto; /* Retrocompatibilidad con versión antigua */
+  flex: 1;
+  min-height: 0;
 }
 
 .modal-footer {
@@ -98,16 +98,38 @@ const closeModal = () => {
   border-top: 1px solid #e5e7eb;
 }
 
-.close-btn {
-  background: none;
+ .close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 3.5rem; /* más separación del borde y scrollbar */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   border: none;
+  background: #f8f9fa;
+  color: #7f8c8d;
   font-size: 24px;
-  color: #9ca3af;
+  font-weight: 300;
   cursor: pointer;
-  transition: color 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 10;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  line-height: 1;
+  padding: 0;
 }
+
 .close-btn:hover {
-  color: #111827;
+  background: #e74c3c;
+  color: white;
+  transform: rotate(90deg) scale(1.1);
+  box-shadow: 0 4px 8px rgba(231, 76, 60, 0.3);
+}
+
+.close-btn:active {
+  transform: rotate(90deg) scale(0.95);
 }
 
 @keyframes modal-in {

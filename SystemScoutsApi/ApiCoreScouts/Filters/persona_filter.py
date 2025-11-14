@@ -34,8 +34,6 @@ class PersonaFilter(django_filters.FilterSet):
                   'vigente'
                   ]
 
-import django_filters
-from ApiCoreScouts.Models.persona_model import Persona_Curso
 
 class PersonaCursoFilter(django_filters.FilterSet):
     """
@@ -74,17 +72,17 @@ class PersonaCursoFilter(django_filters.FilterSet):
 
     # --- Filtros sobre relaciones directas ---
     rol_nombre = django_filters.CharFilter(
-        field_name='ROL_ID__ROL_NOMBRE',
+        field_name='ROL_ID__ROL_DESCRIPCION',
         lookup_expr='icontains',
         label='Filtrar por nombre de rol'
     )
     alimentacion_nombre = django_filters.CharFilter(
-        field_name='ALI_ID__ALI_NOMBRE',
+        field_name='ALI_ID__ALI_DESCRIPCION',
         lookup_expr='icontains',
         label='Filtrar por tipo de alimentación'
     )
     nivel_nombre = django_filters.CharFilter(
-        field_name='NIV_ID__NIV_NOMBRE',
+        field_name='NIV_ID__NIV_DESCRIPCION',
         lookup_expr='icontains',
         label='Filtrar por nivel'
     )

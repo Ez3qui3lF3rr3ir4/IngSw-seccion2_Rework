@@ -22,8 +22,7 @@
 </template>
 
 <script>
-import AppIcons from '@/components/icons/AppIcons.vue'
-
+import AppIcons from '../components/icons/AppIcons.vue'
 
 export default {
   name: 'PermisosToggle',

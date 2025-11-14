@@ -34,7 +34,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     PEL_ID = models.ForeignKey('Perfil',on_delete=models.PROTECT, null=False, db_column='PEL_ID')
     USU_USERNAME = models.CharField(max_length=100, unique=True, null=False, db_column='USU_USERNAME')
     USU_PASSWORD = models.CharField(max_length=128, null=False, db_column='USU_PASSWORD')
-    USU_RUTA_FOTO = models.CharField(max_length=255, null=False, db_column='USU_RUTA_FOTO')
+    USU_RUTA_FOTO = models.CharField(max_length=255, null=True, db_column='USU_RUTA_FOTO')
     USU_VIGENTE = models.BooleanField(default=True, null=False, db_column='USU_VIGENTE')
 
     is_staff = models.BooleanField(default=False)

@@ -6,7 +6,8 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
     username_field = 'USU_USERNAME'
 
     def validate(self, attrs):
-        username = attrs.get('USU_USERNAME')
+        # Accept either the custom field name (USU_USERNAME) or the standard 'username'
+        username = attrs.get(self.username_field) or attrs.get('username')
         password = attrs.get('password')
 
         try:
@@ -20,9 +21,9 @@ class MyTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not user.is_active:
             raise serializers.ValidationError("Usuario inactivo")
 
-        data = super().validate({'username': username, 'password': password})
+        data = super().validate({self.username_field: username, 'password': password})
         data['USU_USERNAME'] = user.USU_USERNAME  # opcional: devolverlo en el token
-        return data   
+        return data     
 
 class LoginSerializer(serializers.Serializer):
     username = serializers.CharField()

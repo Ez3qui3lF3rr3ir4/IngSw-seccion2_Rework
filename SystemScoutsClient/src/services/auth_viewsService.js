@@ -3,7 +3,7 @@ import { request } from './apiClient.js'
 export default {
   // Corresponds to backend view `qr_token` in ApiCoreScouts.Api_Views.auth_views
   async qr_token(payload = {}) {
-    return request('personas/personas', { method: 'POST', body: JSON.stringify(payload) })
+    return request('personas/qr-token', { method: 'POST', body: JSON.stringify(payload) })
   },
 
   // Corresponds to backend view `qr_email` in ApiCoreScouts.Api_Views.auth_views
